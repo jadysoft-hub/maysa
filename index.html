@@ -36,3 +36,182 @@ h2{font-size:20px;font-weight:900;margin:8px 0 12px}
 .rh .em{font-size:44px;background:var(--gl);border-radius:14px;width:76px;height:76px;display:grid;place-items:center}
 .item{background:var(--w);border:1px solid var(--gm);border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center;margin-bottom:10px}
 .item .em{font-size:34px;background:var(--gl);border-radius:12px;width:60px;height:60px;display:grid;place-items:center;flex:none}
+.item .tx{flex:1;min-width:0}
+.item .tx p{color:var(--mut);font-size:13px;margin-top:2px}
+.pr{font-weight:900;color:var(--gd);margin-top:4px}
+.add{background:var(--g);color:#fff;width:38px;height:38px;border-radius:12px;font-size:22px;font-weight:900}
+.add:active{transform:scale(.92)}
+.cart{background:var(--w);border:1px solid var(--gm);border-radius:16px;padding:14px;position:sticky;top:78px}
+.cart h3{font-weight:900;margin-bottom:8px}
+.ci{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed var(--gm);font-size:14px}
+.ci span{flex:1}
+.qty{display:flex;align-items:center;gap:6px}
+.qty button{width:28px;height:28px;border-radius:8px;background:var(--gl);color:var(--gd);font-weight:900}
+.row{display:flex;justify-content:space-between;padding:4px 0;font-size:14px;color:var(--mut)}
+.row.t{font-size:17px;font-weight:900;color:var(--ink);padding-top:8px}
+.cta{width:100%;background:var(--g);color:#fff;border-radius:12px;padding:13px;font-weight:900;font-size:16px;margin-top:10px}
+.cta:disabled{background:#b9d9c5}
+.cta.wa{background:#25d366}
+.empty{color:var(--mut);text-align:center;padding:24px 8px}
+.fab{display:none}
+.mod{position:fixed;inset:0;background:#0a1d1280;z-index:50;display:none;align-items:center;justify-content:center;padding:12px}
+.mod.on{display:flex}
+.box{background:var(--w);border-radius:18px;padding:18px;width:100%;max-width:460px;max-height:92vh;overflow:auto}
+.box h3{font-size:19px;font-weight:900;margin-bottom:10px}
+label{display:block;font-size:13px;font-weight:700;margin:10px 0 4px}
+.in{width:100%;border:1px solid var(--gm);background:var(--bg);border-radius:10px;padding:10px 12px;outline:0}
+.in:focus{border-color:var(--g)}
+.pay{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.po{border:2px solid var(--gm);border-radius:12px;padding:10px;text-align:center;font-weight:700;background:var(--w)}
+.po.on{border-color:var(--g);background:var(--gl)}
+.po small{display:block;font-weight:500;color:var(--mut)}
+.note{background:var(--gl);border-radius:10px;padding:10px;font-size:12.5px;color:var(--gd);margin-top:10px;line-height:1.5}
+.st{display:inline-block;background:var(--gl);color:var(--gd);border-radius:8px;padding:3px 9px;font-weight:700;font-size:12px}
+.oc{border:1px solid var(--gm);border-radius:12px;padding:10px;margin-bottom:8px;font-size:14px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:12px;z-index:99;font-weight:700;display:none;max-width:90vw}
+@media(max-width:900px){
+.lay{grid-template-columns:1fr}
+.cart{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:40;border-radius:18px 18px 0 0;max-height:80vh;overflow:auto;transform:translateY(105%);transition:transform .25s;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+.cart.open{transform:none}
+.fab{display:flex;justify-content:space-between;position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:30;background:var(--g);color:#fff;border-radius:14px;padding:14px 18px;font-weight:900;box-shadow:0 6px 20px #27914c55}
+.tbtn span{display:none}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header><div class="hd">
+<div class="logo" onclick="go('home')"><b>L</b>ezzet Kapında</div>
+<input class="search" id="q" placeholder="Restoran veya yemek ara" oninput="renderHome()">
+<button class="tbtn" onclick="showOrders()">🧾<span> Siparişlerim</span></button>
+</div></header>
+<main id="app"></main>
+<div class="mod" id="mod" onclick="if(event.target===this)closeMod()"><div class="box" id="box"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== AYARLAR ===== */
+const CFG={
+  KEY:'$2a$10$Vm6HUhvS3XsqMvY6BtGJOe6ZIQpzynWm9LoZGhf2jvcZSxr9tEyTq',
+  BIN:'',            // İlk açılışta otomatik oluşur; ekranda çıkan ID'yi buraya yapıştır
+  POLL:8000
+};
+const $=s=>document.querySelector(s), fmt=n=>n.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ₺';
+const mk=(id,name,emoji,cuisine,wa,items)=>({id,name,emoji,cuisine,wa,rating:(4.2+Math.random()*.7).toFixed(1),time:'25-40 dk',min:150,fee:20,
+  menu:items.map((m,i)=>({id:id+i,cat:m[0],name:m[1],desc:m[2],price:m[3],emoji:m[4]}))});
+const SEED={restaurants:[
+ mk('r1','Usta Kebap','🍢','Kebap','905000000000',[['Kebap','Adana Kebap','Közlenmiş biber, lavaş',280,'🍢'],['Kebap','Urfa Kebap','Acısız, pilav ile',275,'🍢'],['Kebap','Tavuk Şiş','Pilav, salata',220,'🍗'],['İçecek','Ayran','300 ml',30,'🥛'],['Tatlı','Künefe','Sıcak servis',120,'🍮']]),
+ mk('r2','Pizza Köşesi','🍕','Pizza','905000000000',[['Pizza','Margarita','Mozzarella, domates',210,'🍕'],['Pizza','Karışık','Sucuk, mantar, biber',260,'🍕'],['Burger','Cheeseburger','150 gr köfte, cheddar',190,'🍔'],['İçecek','Kola','330 ml',40,'🥤'],['Tatlı','Tiramisu','Porsiyon',110,'🍰']]),
+ mk('r3','Anadolu Sofrası','🍲','Ev yemekleri','905000000000',[['Çorba','Mercimek Çorbası','Limon ile',70,'🍲'],['Ana yemek','Karnıyarık','Pilav ile',210,'🍆'],['Ana yemek','Mantı','Yoğurt, sos',190,'🥟'],['Tatlı','Sütlaç','Fırın',80,'🍮'],['İçecek','Şalgam','300 ml',35,'🥤']])
+],orders:[]};
+let db=SEED,cur=null,cart={rid:null,items:{}},pay='Nakit',cat='Hepsi',offline=false;
+const mine=()=>JSON.parse(localStorage.myOrders||'[]'), known=()=>JSON.parse(localStorage.known||'{}');
+
+/* ===== SES ===== */
+let ac;function beep(seq,t='sine'){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();let at=ac.currentTime;seq.forEach(f=>{const o=ac.createOscillator(),g=ac.createGain();o.type=t;o.frequency.value=f;g.gain.setValueAtTime(.15,at);g.gain.exponentialRampToValueAtTime(.001,at+.15);o.connect(g).connect(ac.destination);o.start(at);o.stop(at+.16);at+=.12})}catch(e){}}
+const sAdd=()=>beep([660]),sOk=()=>beep([523,659,784,1046]),sInfo=()=>beep([880,660,880]);
+
+/* ===== JSONBIN ===== */
+const H=()=>({'Content-Type':'application/json','X-Master-Key':CFG.KEY});
+async function load(){
+  try{
+    CFG.BIN=CFG.BIN||localStorage.bin||'';
+    if(!CFG.BIN){
+      const r=await fetch('https://api.jsonbin.io/v3/b',{method:'POST',headers:{...H(),'X-Bin-Private':'true','X-Bin-Name':'siparis-app'},body:JSON.stringify(SEED)});
+      CFG.BIN=(await r.json()).metadata.id;localStorage.bin=CFG.BIN;
+      modal(`<h3>Veritabanı oluşturuldu ✅</h3><p>Bu kodu kopyala ve <b>index.html</b> içindeki <code>BIN:''</code> kısmına yapıştır; böylece tüm cihazlar aynı veriyi kullanır:</p><input class="in" readonly value="${CFG.BIN}" onclick="this.select()"><button class="cta" onclick="closeMod()">Tamam</button>`);
+    }
+    const r=await fetch(`https://api.jsonbin.io/v3/b/${CFG.BIN}/latest`,{headers:H()});
+    if(!r.ok)throw 0;
+    db=(await r.json()).record;offline=false;localStorage.db=JSON.stringify(db);
+  }catch(e){db=JSON.parse(localStorage.db||'null')||SEED;offline=true}
+}
+async function save(){
+  localStorage.db=JSON.stringify(db);
+  if(!CFG.BIN)return;
+  const r=await fetch(`https://api.jsonbin.io/v3/b/${CFG.BIN}`,{method:'PUT',headers:H(),body:JSON.stringify(db)});
+  if(!r.ok)throw new Error('kayıt');
+}
+
+/* ===== ARAYÜZ ===== */
+function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(e.t);e.t=setTimeout(()=>e.style.display='none',2600)}
+function modal(h){$('#box').innerHTML=h;$('#mod').classList.add('on')}
+function closeMod(){$('#mod').classList.remove('on')}
+function go(v,id){cur=v==='rest'?id:null;cat='Hepsi';$('#q').style.display=cur?'none':'';cur?renderRest():renderHome();scrollTo(0,0)}
+function renderHome(){
+  const q=$('#q').value.toLowerCase(),cs=['Hepsi',...new Set(db.restaurants.map(r=>r.cuisine))];
+  const list=db.restaurants.filter(r=>(cat==='Hepsi'||r.cuisine===cat)&&(!q||(r.name+r.cuisine+r.menu.map(m=>m.name).join()).toLowerCase().includes(q)));
+  $('#app').innerHTML=`${offline?'<div class="note">Çevrimdışı mod: veri sunucusuna ulaşılamadı, örnek veriler gösteriliyor.</div>':''}
+  <div class="chips">${cs.map(c=>`<button class="chip ${c===cat?'on':''}" onclick="cat='${c}';renderHome()">${c}</button>`).join('')}</div>
+  <h2>Sana yakın restoranlar</h2>
+  <div class="grid">${list.map(r=>`<div class="rc" onclick="go('rest','${r.id}')"><div class="im">${r.emoji}</div><div class="bd"><h3>${r.name}</h3>
+  <div class="meta"><span class="star">★ ${r.rating}</span><span>${r.cuisine}</span><span>${r.time}</span><span>Min. ${fmt(r.min)}</span></div></div></div>`).join('')||'<p class="empty">Sonuç bulunamadı. Başka bir arama dene.</p>'}</div>`;
+}
+const R=()=>db.restaurants.find(r=>r.id===cur);
+function renderRest(){
+  const r=R(),cs=['Hepsi',...new Set(r.menu.map(m=>m.cat))];
+  $('#app').innerHTML=`<button class="tbtn" onclick="go('home')" style="margin-bottom:12px">← Restoranlar</button>
+  <div class="lay"><div>
+  <div class="rh"><div class="em">${r.emoji}</div><div><h2 style="margin:0">${r.name}</h2><div class="meta"><span class="star">★ ${r.rating}</span><span>${r.time}</span><span>Min. ${fmt(r.min)}</span><span>Teslimat ${fmt(r.fee)}</span></div></div></div>
+  <div class="chips">${cs.map(c=>`<button class="chip ${c===cat?'on':''}" onclick="cat='${c}';renderRest()">${c}</button>`).join('')}</div>
+  ${r.menu.filter(m=>cat==='Hepsi'||m.cat===cat).map(m=>`<div class="item"><div class="em">${m.emoji}</div><div class="tx"><b>${m.name}</b><p>${m.desc}</p><div class="pr">${fmt(m.price)}</div></div><button class="add" aria-label="Ekle" onclick="add('${m.id}',1)">+</button></div>`).join('')}
+  </div><aside class="cart" id="cart"></aside></div><button class="fab" id="fab" onclick="$('#cart').classList.toggle('open')"></button>`;
+  renderCart();
+}
+function add(id,d){
+  const r=R();if(cart.rid&&cart.rid!==r.id&&Object.keys(cart.items).length){if(!confirm('Sepetindeki başka restoran ürünleri silinsin mi?'))return;cart.items={}}
+  cart.rid=r.id;cart.items[id]=(cart.items[id]||0)+d;if(cart.items[id]<=0)delete cart.items[id];d>0?sAdd():0;renderCart();
+}
+function lines(){const r=db.restaurants.find(x=>x.id===cart.rid);return r?Object.entries(cart.items).map(([id,q])=>({...r.menu.find(m=>m.id===id),q})).filter(l=>l.name):[]}
+function totals(){const r=db.restaurants.find(x=>x.id===cart.rid),sub=lines().reduce((a,l)=>a+l.price*l.q,0);return{r,sub,fee:sub?r.fee:0,tot:sub?sub+r.fee:0}}
+function renderCart(){
+  const c=$('#cart');if(!c)return;const L=lines(),t=totals(),n=L.reduce((a,l)=>a+l.q,0);
+  c.innerHTML=`<h3>Sepetim</h3>${L.map(l=>`<div class="ci"><span>${l.name}</span><div class="qty"><button onclick="add('${l.id}',-1)">−</button><b>${l.q}</b><button onclick="add('${l.id}',1)">+</button></div><b>${fmt(l.price*l.q)}</b></div>`).join('')||'<p class="empty">Sepetin boş. Menüden ürün ekle.</p>'}
+  ${L.length?`<div class="row"><span>Ara toplam</span><span>${fmt(t.sub)}</span></div><div class="row"><span>Teslimat</span><span>${fmt(t.fee)}</span></div><div class="row t"><span>Toplam</span><span>${fmt(t.tot)}</span></div>
+  ${t.sub<t.r.min?`<div class="note">Minimum sepet tutarı ${fmt(t.r.min)}. ${fmt(t.r.min-t.sub)} daha ekle.</div>`:''}
+  <button class="cta" ${t.sub<t.r.min?'disabled':''} onclick="checkout()">Siparişi tamamla</button>`:''}`;
+  const f=$('#fab');if(f){f.style.display=n?'':'none';f.innerHTML=`<span>🛒 Sepeti gör (${n})</span><span>${fmt(t.tot)}</span>`}
+}
+function checkout(){
+  const s=JSON.parse(localStorage.prof||'{}');
+  modal(`<h3>Teslimat ve ödeme</h3>
+  <label>Ad soyad</label><input class="in" id="cn" value="${s.n||''}" autocomplete="name">
+  <label>Telefon</label><input class="in" id="cp" type="tel" value="${s.p||''}" autocomplete="tel" placeholder="05xx xxx xx xx">
+  <label>Açık adres</label><textarea class="in" id="ca" rows="2">${s.a||''}</textarea>
+  <label>Sipariş notu (isteğe bağlı)</label><input class="in" id="cno" placeholder="Zil çalışmıyor, acısız olsun…">
+  <label>Ödeme yöntemi</label>
+  <div class="pay"><button class="po on" id="p1" onclick="setPay('Nakit')">💵 Kapıda nakit<small>Teslimatta öde</small></button><button class="po" id="p2" onclick="setPay('Kapıda kart')">💳 Kapıda kart<small>Kuryede POS</small></button></div>
+  <div class="note"><b>Ödeme koşulları:</b> Ödeme yalnızca teslimat anında kuryeye yapılır. Nakitte para üstü için tam tutarı hazır bulundurmanız rica olunur. Kapıda kartta kurye POS cihazı ile gelir. Sipariş hazırlanmaya başladıktan sonra iptal edilemez.</div>
+  <div class="row t"><span>Toplam</span><span>${fmt(totals().tot)}</span></div>
+  <button class="cta" id="sb" onclick="place()">Siparişi onayla</button>`);pay='Nakit';
+}
+function setPay(p){pay=p;$('#p1').classList.toggle('on',p==='Nakit');$('#p2').classList.toggle('on',p!=='Nakit')}
+async function place(){
+  const n=$('#cn').value.trim(),p=$('#cp').value.trim(),a=$('#ca').value.trim();
+  if(n.length<2||p.replace(/\D/g,'').length<10||a.length<8){toast('Ad, geçerli telefon ve açık adres gerekli');return}
+  localStorage.prof=JSON.stringify({n,p,a});$('#sb').disabled=true;$('#sb').textContent='Gönderiliyor…';
+  const t=totals(),o={id:'S'+Date.now().toString(36).toUpperCase(),rid:t.r.id,rname:t.r.name,items:lines().map(l=>({n:l.name,q:l.q,p:l.price})),sub:t.sub,fee:t.fee,total:t.tot,name:n,phone:p,addr:a,note:$('#cno').value.trim(),pay,status:'Yeni',t:Date.now()};
+  try{
+    await load();db.orders=db.orders||[];db.orders.push(o);await save();
+    localStorage.myOrders=JSON.stringify([...mine(),o.id]);const k=known();k[o.id]='Yeni';localStorage.known=JSON.stringify(k);
+    cart={rid:null,items:{}};sOk();renderCart();
+    modal(`<h3>Siparişin alındı 🎉</h3><p>Sipariş no: <b>${o.id}</b></p><p style="margin:8px 0">Restoran onayladığında sana sesli bildirim vereceğiz. Bu sayfayı açık tut.</p>
+    <button class="cta wa" onclick="wa('${o.id}')">WhatsApp ile restorana ilet</button><button class="cta" onclick="closeMod();go('home')">Ana sayfa</button>`);
+  }catch(e){toast('Sipariş gönderilemedi. İnternetini kontrol edip tekrar dene.');$('#sb').disabled=false;$('#sb').textContent='Siparişi onayla'}
+}
+function waText(o){return `*Yeni Sipariş ${o.id}*\n${o.rname}\n\n`+o.items.map(i=>`${i.q}x ${i.n} - ${fmt(i.p*i.q)}`).join('\n')+`\n\nToplam: ${fmt(o.total)}\nÖdeme: ${o.pay}\nAd: ${o.name}\nTel: ${o.phone}\nAdres: ${o.addr}${o.note?'\nNot: '+o.note:''}`}
+function wa(id,o){o=o||db.orders.find(x=>x.id===id);const r=db.restaurants.find(x=>x.id===o.rid);open(`https://wa.me/${r.wa}?text=${encodeURIComponent(waText(o))}`,'_blank')}
+function showOrders(){
+  const L=(db.orders||[]).filter(o=>mine().includes(o.id)).reverse();
+  modal(`<h3>Siparişlerim</h3>${L.map(o=>`<div class="oc"><div class="row" style="color:var(--ink)"><b>${o.rname}</b><span class="st">${o.status}</span></div><div class="meta">${o.id} · ${new Date(o.t).toLocaleString('tr-TR')}</div><div style="margin:6px 0">${o.items.map(i=>`${i.q}× ${i.n}`).join(', ')}</div><b>${fmt(o.total)}</b> · ${o.pay}</div>`).join('')||'<p class="empty">Henüz siparişin yok.</p>'}<button class="cta" onclick="closeMod()">Kapat</button>`);
+}
+/* Sipariş durumu takibi: değişince sesli bildirim */
+async function poll(){
+  if(!mine().length)return;const before=JSON.stringify(db.orders);await load();const k=known();let ch=false;
+  (db.orders||[]).filter(o=>mine().includes(o.id)).forEach(o=>{if(k[o.id]&&k[o.id]!==o.status){ch=true;toast(`Siparişin ${o.id}: ${o.status}`)}k[o.id]=o.status});
+  localStorage.known=JSON.stringify(k);if(ch)sInfo();
+}
+(async()=>{await load();renderHome();setInterval(poll,CFG.POLL);addEventListener('click',()=>ac&&ac.state==='suspended'&&ac.resume(),{once:true})})();
+</script>
+</body>
+</html>
